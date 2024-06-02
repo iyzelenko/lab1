@@ -1,50 +1,68 @@
 import math
 
+# Уравнение
 def f(x):
     return x * math.exp(x) - x - 1
 
-def dichotomy_method(a, b, eps):
-    while abs(b - a) > eps:
-        c = (a + b) / 2
+# Метод дихотомии (бисекции)
+def bisection_method(f, a, b, epsilon):
+    assert f(a) * f(b) < 0, "Функция должна принимать значения разных знаков на концах интервала"
+    while (b - a) / 2 > epsilon:
+        midpoint = (a + b) / 2
+        if f(midpoint) == 0:
+            return midpoint
+        elif f(a) * f(midpoint) < 0:
+            b = midpoint
+        else:
+            a = midpoint
+    return (a + b) / 2
+
+# Метод итераций
+def iteration_method(f, x0, epsilon, max_iterations=1000):
+    x = x0
+    for i in range(max_iterations):
+        x_new = f(x)
+        if abs(x_new - x) < epsilon:
+            return x_new
+        x = x_new
+    raise ValueError("Метод итераций не сошелся")
+
+# Метод хорд
+def chord_method(f, a, b, epsilon, max_iterations=1000):
+    for i in range(max_iterations):
+        c = (a*f(b) - b*f(a)) / (f(b) - f(a))
+        if f(c) == 0 or abs(b - a) < epsilon:
+            return c
         if f(a) * f(c) < 0:
             b = c
         else:
             a = c
-    return c
+    raise ValueError("Метод хорд не сошелся")
 
-def iteration_method(x0, eps):
+# Метод Ньютона
+def newton_method(f, f_prime, x0, epsilon, max_iterations=1000):
     x = x0
-    x_prev = x0 + 2 * eps
-    while abs(x - x_prev) > eps:
-        x_prev = x
-        x = x - f(x)
-    return x
+    for i in range(max_iterations):
+        x_new = x - f(x) / f_prime(x)
+        if abs(x_new - x) < epsilon:
+            return x_new
+        x = x_new
+    raise ValueError("Метод Ньютона не сошелся")
 
-def chord_method(a, b, eps):
-    x0 = (a * f(b) - b * f(a)) / (f(b) - f(a))
-    x = x0
-    while abs(f(x)) > eps:
-        x = (a * f(b) - b * f(a)) / (f(b) - f(a))
-        if f(a) * f(x) < 0:
-            b = x
-        else:
-            a = x
-    return x
-
-def newton_method(x0, eps):
-    x = x0
-    x_prev = x0 + 2 * eps
-    while abs(x - x_prev) > eps:
-        x_prev = x
-        derivative = math.exp(x) + x * math.exp(x) - 1
-        x = x - f(x) / derivative
-    return x
-
+# Применение методов для поиска корней
+epsilon = 10e-6
 a = -1
 b = 1
-eps = 1e-6
+x0 = 1
+f_prime = lambda x: math.exp(x) + x * math.exp(x) - 1
 
-print("Dichotomy method: ", dichotomy_method(a, b, eps))
-print("Iteration method: ", iteration_method(1, eps))
-print("Chord method: ", chord_method(a, b, eps))
-print("Newton method: ", newton_method(1, eps))
+# Результаты для каждого метода
+result_bisection = bisection_method(f, a, b, epsilon)
+result_iteration = iteration_method(lambda x: math.log(1 + x), x0, epsilon)
+result_chord = chord_method(f, a, b, epsilon)
+result_newton = newton_method(f, f_prime, x0, epsilon)
+
+print("Корень методом дихотомии:", result_bisection)
+print("Корень методом итераций:", result_iteration)
+print("Корень методом хорд:", result_chord)
+print("Корень методом Ньютона:", result_newton)
