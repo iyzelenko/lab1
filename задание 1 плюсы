@@ -1,0 +1,36 @@
+#include <iostream>
+#include <complex>
+#include <cmath>
+
+using namespace std;
+
+int main() {
+    // Задаем комплексные числа
+    complex<double> z1(-1, 1), z2(-4, -2), z3(-1, -1);
+
+    // Сумма
+    complex<double> sum = z1 + z2;
+    cout << "Сумма: " << sum << endl;
+
+    // Разность
+    complex<double> difference = z1 - z2;
+    cout << "Разность: " << difference << endl;
+
+    // Произведение
+    complex<double> product = z1 * z2;
+    cout << "Произведение: " << product << endl;
+
+    // Частное
+    complex<double> quotient = z1 / z2;
+    cout << "Частное: " << quotient << endl;
+
+    // Четвертая степень
+    complex<double> z3_fourth_power = pow(z3, 4);
+    cout << "Четвертая степень: " << z3_fourth_power << endl;
+
+    // Корень третьей степени
+    complex<double> z3_cube_root = pow(z3, 1.0 / 3.0);
+    cout << "Корень третьей степени: " << z3_cube_root << endl;
+
+    return 0;
+}
