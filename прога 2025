@@ -1,0 +1,180 @@
+import os
+import tkinter as tk
+from PIL import Image, ImageTk
+import random
+import threading
+import time
+
+
+class CockroachGame:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Таракан Ультра")
+
+        self.power = 1
+        self.mutation = "Обычный таракан"
+
+        # Файлы изображений таракана
+        self.image_files = [
+            "cockroach_1.jpeg",
+            "cockroach_2.jpeg",
+            "cockroach_3.jpeg",
+            "cockroach_4.jpeg",
+            "cockroach_5.jpeg"
+        ]
+
+        # Загружаем все изображения
+        self.images = [Image.open(file).resize((120, 120), Image.LANCZOS) for file in self.image_files]
+
+        self.angle = 0  # Угол поворота
+        self.running = True  # Флаг для анимации
+        self.sorting = False  # Флаг для сортировки
+
+        self.label_power = tk.Label(root, text=f"Мощь таракана: {self.power}", font=("Arial", 14))
+        self.label_power.pack(pady=5)
+
+        self.label_mutation = tk.Label(root, text=f"Мутация: {self.mutation}", font=("Arial", 12))
+        self.label_mutation.pack(pady=5)
+
+        self.canvas = tk.Canvas(root, width=500, height=400, bg="white")
+        self.canvas.pack()
+
+        self.tk_image = None
+        self.image_id = None
+        self.x_pos = 200
+        self.y_pos = 150
+        self.update_image()
+
+        self.button = tk.Button(root, text="Клик!", font=("Arial", 16), command=self.click)
+        self.button.pack(pady=10)
+
+        # Кнопки управления
+        self.rotate_button = tk.Button(root, text="Повернуть", command=self.rotate)
+        self.rotate_button.pack()
+
+        self.start_animation_button = tk.Button(root, text="Старт анимации", command=self.start_animation)
+        self.start_animation_button.pack()
+
+        self.stop_animation_button = tk.Button(root, text="Стоп анимации", command=self.stop_animation)
+        self.stop_animation_button.pack()
+
+        self.start_sort_button = tk.Button(root, text="Начать сортировку", command=self.start_sorting)
+        self.start_sort_button.pack()
+
+        self.root.bind("<Left>", self.move_left)
+        self.root.bind("<Right>", self.move_right)
+        self.root.bind("<Up>", self.move_up)
+        self.root.bind("<Down>", self.move_down)
+
+        # Запускаем поток анимации
+        self.animation_thread = threading.Thread(target=self.animate_images, daemon=True)
+        self.animation_thread.start()
+
+    def click(self):
+        d = random.randint(-5, 10)
+        self.power += d
+        self.power = max(0, self.power)
+
+        mutations = ["Гигантские усы", "Реактивные лапки", "Лазерные глаза", "Летающий таракан"]
+        failures = ["Потерял лапку", "Облысел", "Попал под тапок, но выжил"]
+
+        if d > 0:
+            self.mutation = random.choice(mutations)
+        else:
+            self.mutation = random.choice(failures)
+
+        self.label_power.config(text=f"Мощь таракана: {self.power}")
+        self.label_mutation.config(text=f"Мутация: {self.mutation}")
+        self.update_image()
+
+    def update_image(self):
+        """Обновляем изображение в зависимости от мощности таракана и поворачиваем его"""
+        if self.power <= 10:
+            img = self.images[0]
+        elif self.power <= 30:
+            img = self.images[1]
+        elif self.power <= 50:
+            img = self.images[2]
+        elif self.power <= 100:
+            img = self.images[3]
+        else:
+            img = self.images[4]
+
+        img = img.rotate(self.angle)  # Поворот изображения
+        self.tk_image = ImageTk.PhotoImage(img)
+
+        if self.image_id:
+            self.canvas.itemconfig(self.image_id, image=self.tk_image)
+        else:
+            self.image_id = self.canvas.create_image(self.x_pos, self.y_pos, image=self.tk_image, anchor=tk.CENTER)
+
+        self.canvas.update()
+
+    def rotate(self):
+        """Поворачиваем изображение на 45 градусов"""
+        self.angle = (self.angle + 45) % 360
+        self.update_image()
+
+    def start_animation(self):
+        """Запускаем анимацию смены изображений"""
+        self.running = True
+
+    def stop_animation(self):
+        """Останавливаем анимацию"""
+        self.running = False
+
+    def animate_images(self):
+        """Фоновый поток для смены изображений"""
+        while True:
+            if self.running:
+                self.power += random.randint(-2, 5)
+                self.update_image()
+            time.sleep(0.5)  # Меняем изображение каждые 0.5 секунды
+
+    def start_sorting(self):
+        """Запускаем визуализацию сортировки"""
+        if not self.sorting:
+            self.sorting = True
+            sorting_thread = threading.Thread(target=self.visualize_sorting, daemon=True)
+            sorting_thread.start()
+
+    def visualize_sorting(self):
+        """Визуализируем сортировку пузырьком"""
+        array = [random.randint(1, 100) for _ in range(10)]
+        n = len(array)
+
+        for i in range(n):
+            for j in range(n - i - 1):
+                if array[j] > array[j + 1]:
+                    array[j], array[j + 1] = array[j + 1], array[j]
+                    self.power = (j % 5) * 25  # Изменяем "мощь" таракана во время сортировки
+                    self.update_image()
+                    time.sleep(0.3)
+
+        self.sorting = False
+
+    def move_left(self, event):
+        if self.x_pos > 40:
+            self.x_pos -= 20
+            self.canvas.move(self.image_id, -20, 0)
+
+    def move_right(self, event):
+        if self.x_pos < 460:
+            self.x_pos += 20
+            self.canvas.move(self.image_id, 20, 0)
+
+    def move_up(self, event):
+        if self.y_pos > 40:
+            self.y_pos -= 20
+            self.canvas.move(self.image_id, 0, -20)
+
+    def move_down(self, event):
+        if self.y_pos < 360:
+            self.y_pos += 20
+            self.canvas.move(self.image_id, 0, 20)
+
+
+if __name__ == "__main__":  # ✅ Проверено, исправлено
+    root = tk.Tk()
+    game = CockroachGame(root)
+    root.mainloop()
