@@ -26,7 +26,6 @@ class CockroachGame:
 
         self.angle = 0
         self.running = False
-        self.sorting = False
         self.rotating = False
         self.rotation_direction = 1
         self.animation_speed = 0.2
@@ -46,8 +45,12 @@ class CockroachGame:
         self.y_pos = 150
         self.update_image()
 
+        # Кнопки
         self.button = tk.Button(root, text="Клик!", font=("Arial", 16), command=self.click)
         self.button.pack(pady=10)
+
+        self.rotate_button = tk.Button(root, text="Повернуть", command=self.rotate)
+        self.rotate_button.pack()
 
         self.start_rotation_button = tk.Button(root, text="Начать прокручивание", command=self.start_rotation)
         self.start_rotation_button.pack()
@@ -58,12 +61,24 @@ class CockroachGame:
         self.change_rotation_button = tk.Button(root, text="Сменить направление", command=self.change_rotation)
         self.change_rotation_button.pack()
 
+        self.start_animation_button = tk.Button(root, text="Старт анимации", command=self.start_animation)
+        self.start_animation_button.pack()
+
+        self.stop_animation_button = tk.Button(root, text="Стоп анимации", command=self.stop_animation)
+        self.stop_animation_button.pack()
+
+        self.speed_up_button = tk.Button(root, text="Ускорить анимацию", command=self.speed_up)
+        self.speed_up_button.pack()
+
+        self.start_sort_button = tk.Button(root, text="Начать сортировку", command=self.start_sorting)
+        self.start_sort_button.pack()
+
         self.root.bind("<Left>", self.move_left)
         self.root.bind("<Right>", self.move_right)
         self.root.bind("<Up>", self.move_up)
         self.root.bind("<Down>", self.move_down)
 
-        # Создаем потоки после объявления всех методов
+        # Запускаем потоки
         self.animation_thread = threading.Thread(target=self.animate_images, daemon=True)
         self.animation_thread.start()
 
@@ -116,6 +131,17 @@ class CockroachGame:
                 self.power += random.randint(-2, 5)
                 self.update_image()
             time.sleep(self.animation_speed)
+
+    def start_animation(self):
+        self.running = True
+
+    def stop_animation(self):
+        self.running = False
+
+    def speed_up(self):
+        """Ускоряем анимацию"""
+        self.animation_speed = max(0.05, self.animation_speed - 0.05)
+        print(f"Новая скорость анимации: {self.animation_speed} сек.")
 
     def start_rotation(self):
         self.rotating = True
