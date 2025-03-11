@@ -164,6 +164,23 @@ class CockroachGame:
                 self.update_image()
             time.sleep(0.1)
 
+    def start_sorting(self):
+        """Фоновый процесс для имитации сортировки"""
+        sorting_thread = threading.Thread(target=self.sorting_simulation, daemon=True)
+        sorting_thread.start()
+
+    def sorting_simulation(self):
+        """Имитация сортировки (Bubble Sort)"""
+        arr = [random.randint(1, 100) for _ in range(10)]
+        n = len(arr)
+        for i in range(n):
+            for j in range(0, n - i - 1):
+                if arr[j] > arr[j + 1]:
+                    arr[j], arr[j + 1] = arr[j + 1], arr[j]
+                    self.power = random.randint(10, 100)
+                    self.update_image()
+                    time.sleep(0.3)
+
     def move_left(self, event):
         if self.x_pos > 40:
             self.x_pos -= 20
