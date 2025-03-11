@@ -124,6 +124,11 @@ class CockroachGame:
 
         self.canvas.update()
 
+    def rotate(self):
+        """Поворот изображения на 45 градусов"""
+        self.angle = (self.angle + 45) % 360
+        self.update_image()
+
     def animate_images(self):
         """Фоновый поток для смены изображений"""
         while True:
