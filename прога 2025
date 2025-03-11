@@ -63,6 +63,7 @@ class CockroachGame:
         self.root.bind("<Up>", self.move_up)
         self.root.bind("<Down>", self.move_down)
 
+        # Создаем потоки после объявления всех методов
         self.animation_thread = threading.Thread(target=self.animate_images, daemon=True)
         self.animation_thread.start()
 
@@ -107,6 +108,14 @@ class CockroachGame:
             self.image_id = self.canvas.create_image(self.x_pos, self.y_pos, image=self.tk_image, anchor=tk.CENTER)
 
         self.canvas.update()
+
+    def animate_images(self):
+        """Фоновый поток для смены изображений"""
+        while True:
+            if self.running:
+                self.power += random.randint(-2, 5)
+                self.update_image()
+            time.sleep(self.animation_speed)
 
     def start_rotation(self):
         self.rotating = True
