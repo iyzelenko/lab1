@@ -1,15 +1,18 @@
-import os
 import tkinter as tk
 from PIL import Image, ImageTk
 import random
 import threading
 import time
+import pygame
+import os
 
+pygame.mixer.init()
 
 class CockroachGame:
     def __init__(self, root):
         self.root = root
         self.root.title("Таракан Ультра")
+        self.root.geometry("800x600")
 
         self.power = 1
         self.mutation = "Обычный таракан"
@@ -22,13 +25,16 @@ class CockroachGame:
             "cockroach_5.jpeg"
         ]
 
-        self.images = [Image.open(file).resize((120, 120), Image.LANCZOS) for file in self.image_files]
-
+        self.images = [Image.open(file).resize((150, 150), Image.LANCZOS) for file in self.image_files]
         self.angle = 0
         self.running = False
         self.rotating = False
         self.rotation_direction = 1
         self.animation_speed = 0.2
+
+        self.bg_colors = ["lightblue", "lightgreen", "lightpink", "lightyellow", "lavender", "orange", "red"]
+        self.current_color_index = 0
+        self.dance_active = False
 
         self.label_power = tk.Label(root, text=f"Мощь таракана: {self.power}", font=("Arial", 14))
         self.label_power.pack(pady=5)
@@ -36,18 +42,17 @@ class CockroachGame:
         self.label_mutation = tk.Label(root, text=f"Мутация: {self.mutation}", font=("Arial", 12))
         self.label_mutation.pack(pady=5)
 
-        self.canvas = tk.Canvas(root, width=500, height=400, bg="white")
+        self.canvas = tk.Canvas(root, width=700, height=400, bg="lightblue")
         self.canvas.pack()
 
         self.tk_image = None
         self.image_id = None
-        self.x_pos = 200
-        self.y_pos = 150
+        self.x_pos = 350
+        self.y_pos = 200
         self.update_image()
 
-        # Кнопки
         self.button = tk.Button(root, text="Клик!", font=("Arial", 16), command=self.click)
-        self.button.pack(pady=10)
+        self.button.pack(pady=5)
 
         self.rotate_button = tk.Button(root, text="Повернуть", command=self.rotate)
         self.rotate_button.pack()
@@ -70,20 +75,19 @@ class CockroachGame:
         self.speed_up_button = tk.Button(root, text="Ускорить анимацию", command=self.speed_up)
         self.speed_up_button.pack()
 
-        self.start_sort_button = tk.Button(root, text="Начать сортировку", command=self.start_sorting)
-        self.start_sort_button.pack()
+        self.color_button = tk.Button(root, text="Сменить цвет фона", command=self.change_background_color)
+        self.color_button.pack()
+
+        self.dance_button = tk.Button(root, text="💃 Танец + музыка!", command=self.start_dance_party)
+        self.dance_button.pack(pady=10)
 
         self.root.bind("<Left>", self.move_left)
         self.root.bind("<Right>", self.move_right)
         self.root.bind("<Up>", self.move_up)
         self.root.bind("<Down>", self.move_down)
 
-        # Запускаем потоки
-        self.animation_thread = threading.Thread(target=self.animate_images, daemon=True)
-        self.animation_thread.start()
-
-        self.rotation_thread = threading.Thread(target=self.auto_rotate, daemon=True)
-        self.rotation_thread.start()
+        threading.Thread(target=self.animate_images, daemon=True).start()
+        threading.Thread(target=self.auto_rotate, daemon=True).start()
 
     def click(self):
         d = random.randint(-5, 10)
@@ -92,11 +96,7 @@ class CockroachGame:
 
         mutations = ["Гигантские усы", "Реактивные лапки", "Лазерные глаза", "Летающий таракан"]
         failures = ["Потерял лапку", "Облысел", "Попал под тапок, но выжил"]
-
-        if d > 0:
-            self.mutation = random.choice(mutations)
-        else:
-            self.mutation = random.choice(failures)
+        self.mutation = random.choice(mutations if d > 0 else failures)
 
         self.label_power.config(text=f"Мощь таракана: {self.power}")
         self.label_mutation.config(text=f"Мутация: {self.mutation}")
@@ -125,17 +125,22 @@ class CockroachGame:
         self.canvas.update()
 
     def rotate(self):
-        """Поворот изображения на 45 градусов"""
         self.angle = (self.angle + 45) % 360
         self.update_image()
 
     def animate_images(self):
-        """Фоновый поток для смены изображений"""
         while True:
             if self.running:
                 self.power += random.randint(-2, 5)
                 self.update_image()
             time.sleep(self.animation_speed)
+
+    def auto_rotate(self):
+        while True:
+            if self.rotating:
+                self.angle = (self.angle + 10 * self.rotation_direction) % 360
+                self.update_image()
+            time.sleep(0.1)
 
     def start_animation(self):
         self.running = True
@@ -144,9 +149,7 @@ class CockroachGame:
         self.running = False
 
     def speed_up(self):
-        """Ускоряем анимацию"""
         self.animation_speed = max(0.05, self.animation_speed - 0.05)
-        print(f"Новая скорость анимации: {self.animation_speed} сек.")
 
     def start_rotation(self):
         self.rotating = True
@@ -157,29 +160,38 @@ class CockroachGame:
     def change_rotation(self):
         self.rotation_direction *= -1
 
-    def auto_rotate(self):
-        while True:
-            if self.rotating:
-                self.angle = (self.angle + 10 * self.rotation_direction) % 360
-                self.update_image()
-            time.sleep(0.1)
+    def change_background_color(self):
+        self.current_color_index = (self.current_color_index + 1) % len(self.bg_colors)
+        self.canvas.config(bg=self.bg_colors[self.current_color_index])
 
-    def start_sorting(self):
-        """Фоновый процесс для имитации сортировки"""
-        sorting_thread = threading.Thread(target=self.sorting_simulation, daemon=True)
-        sorting_thread.start()
+    def start_dance_party(self):
+        if not self.dance_active:
+            self.dance_active = True
+            threading.Thread(target=self.dance_loop, daemon=True).start()
+            threading.Thread(target=self.play_music, daemon=True).start()
 
-    def sorting_simulation(self):
-        """Имитация сортировки (Bubble Sort)"""
-        arr = [random.randint(1, 100) for _ in range(10)]
-        n = len(arr)
-        for i in range(n):
-            for j in range(0, n - i - 1):
-                if arr[j] > arr[j + 1]:
-                    arr[j], arr[j + 1] = arr[j + 1], arr[j]
-                    self.power = random.randint(10, 100)
-                    self.update_image()
-                    time.sleep(0.3)
+    def play_music(self):
+        try:
+            music_path = "/mnt/data/crazy_frog.mp3"
+            if not os.path.exists(music_path):
+                music_path = "crazy_frog.mp3"  # fallback if in local folder
+            pygame.mixer.music.load(music_path)
+            pygame.mixer.music.play()
+        except Exception as e:
+            print(f"Ошибка воспроизведения музыки: {e}")
+
+    def dance_loop(self):
+        directions = [15, -15]
+        direction_index = 0
+        for _ in range(100):
+            self.angle += directions[direction_index]
+            direction_index = (direction_index + 1) % 2
+            self.y_pos += -10 if direction_index == 0 else 10
+            self.canvas.move(self.image_id, 0, -10 if direction_index == 0 else 10)
+            self.canvas.config(bg=random.choice(self.bg_colors))
+            self.update_image()
+            time.sleep(0.2)
+        self.dance_active = False
 
     def move_left(self, event):
         if self.x_pos > 40:
@@ -187,7 +199,7 @@ class CockroachGame:
             self.canvas.move(self.image_id, -20, 0)
 
     def move_right(self, event):
-        if self.x_pos < 460:
+        if self.x_pos < 760:
             self.x_pos += 20
             self.canvas.move(self.image_id, 20, 0)
 
@@ -202,7 +214,7 @@ class CockroachGame:
             self.canvas.move(self.image_id, 0, 20)
 
 
-if __name__ == "__main__":  # ✅ Проверено и исправлено
+if __name__ == "__main__":
     root = tk.Tk()
     game = CockroachGame(root)
     root.mainloop()
