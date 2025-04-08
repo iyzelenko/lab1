@@ -1,18 +1,29 @@
 import tkinter as tk
 from PIL import Image, ImageTk
-import random
 import threading
+import random
 import time
 import pygame
 import os
 
+# Инициализация pygame для музыки
 pygame.mixer.init()
 
+# Класс одного таракана
+class Cockroach:
+    def __init__(self, power, mutation):
+        self.power = power
+        self.mutation = mutation
+
+    def __repr__(self):
+        return f"Таракан(мощь={self.power}, мутация='{self.mutation}')"
+
+# Основной класс игры
 class CockroachGame:
     def __init__(self, root):
         self.root = root
         self.root.title("Таракан Ультра")
-        self.root.geometry("800x600")
+        self.root.geometry("1000x700")
 
         self.power = 1
         self.mutation = "Обычный таракан"
@@ -24,8 +35,8 @@ class CockroachGame:
             "cockroach_4.jpeg",
             "cockroach_5.jpeg"
         ]
-
         self.images = [Image.open(file).resize((150, 150), Image.LANCZOS) for file in self.image_files]
+
         self.angle = 0
         self.running = False
         self.rotating = False
@@ -37,10 +48,10 @@ class CockroachGame:
         self.dance_active = False
 
         self.label_power = tk.Label(root, text=f"Мощь таракана: {self.power}", font=("Arial", 14))
-        self.label_power.pack(pady=5)
+        self.label_power.pack()
 
         self.label_mutation = tk.Label(root, text=f"Мутация: {self.mutation}", font=("Arial", 12))
-        self.label_mutation.pack(pady=5)
+        self.label_mutation.pack()
 
         self.canvas = tk.Canvas(root, width=700, height=400, bg="lightblue")
         self.canvas.pack()
@@ -51,41 +62,39 @@ class CockroachGame:
         self.y_pos = 200
         self.update_image()
 
-        self.button = tk.Button(root, text="Клик!", font=("Arial", 16), command=self.click)
-        self.button.pack(pady=5)
-
-        self.rotate_button = tk.Button(root, text="Повернуть", command=self.rotate)
-        self.rotate_button.pack()
-
-        self.start_rotation_button = tk.Button(root, text="Начать прокручивание", command=self.start_rotation)
-        self.start_rotation_button.pack()
-
-        self.stop_rotation_button = tk.Button(root, text="Остановить прокручивание", command=self.stop_rotation)
-        self.stop_rotation_button.pack()
-
-        self.change_rotation_button = tk.Button(root, text="Сменить направление", command=self.change_rotation)
-        self.change_rotation_button.pack()
-
-        self.start_animation_button = tk.Button(root, text="Старт анимации", command=self.start_animation)
-        self.start_animation_button.pack()
-
-        self.stop_animation_button = tk.Button(root, text="Стоп анимации", command=self.stop_animation)
-        self.stop_animation_button.pack()
-
-        self.speed_up_button = tk.Button(root, text="Ускорить анимацию", command=self.speed_up)
-        self.speed_up_button.pack()
-
-        self.color_button = tk.Button(root, text="Сменить цвет фона", command=self.change_background_color)
-        self.color_button.pack()
-
-        self.dance_button = tk.Button(root, text="💃 Танец + музыка!", command=self.start_dance_party)
-        self.dance_button.pack(pady=10)
+        # Кнопки управления
+        buttons = [
+            ("Клик!", self.click),
+            ("Повернуть", self.rotate),
+            ("Начать прокручивание", self.start_rotation),
+            ("Остановить прокручивание", self.stop_rotation),
+            ("Сменить направление", self.change_rotation),
+            ("Старт анимации", self.start_animation),
+            ("Стоп анимации", self.stop_animation),
+            ("Ускорить анимацию", self.speed_up),
+            ("Сменить цвет фона", self.change_background_color),
+            ("💃 Танец + музыка!", self.start_dance_party),
+            ("Сортировать тараканов", self.start_sorting_thread),
+        ]
+        for text, command in buttons:
+            tk.Button(root, text=text, command=command).pack(pady=2)
 
         self.root.bind("<Left>", self.move_left)
         self.root.bind("<Right>", self.move_right)
         self.root.bind("<Up>", self.move_up)
         self.root.bind("<Down>", self.move_down)
 
+        # Список тараканов
+        self.cockroach_list = [
+            Cockroach(random.randint(1, 100), random.choice(["обычный", "сильный", "гигантский"]))
+            for _ in range(10)
+        ]
+        self.sorting = False
+        self.display_text = tk.Text(root, height=10, width=60)
+        self.display_text.pack()
+        self.update_display()
+
+        # Потоки
         threading.Thread(target=self.animate_images, daemon=True).start()
         threading.Thread(target=self.auto_rotate, daemon=True).start()
 
@@ -93,11 +102,9 @@ class CockroachGame:
         d = random.randint(-5, 10)
         self.power += d
         self.power = max(0, self.power)
-
         mutations = ["Гигантские усы", "Реактивные лапки", "Лазерные глаза", "Летающий таракан"]
         failures = ["Потерял лапку", "Облысел", "Попал под тапок, но выжил"]
         self.mutation = random.choice(mutations if d > 0 else failures)
-
         self.label_power.config(text=f"Мощь таракана: {self.power}")
         self.label_mutation.config(text=f"Мутация: {self.mutation}")
         self.update_image()
@@ -113,15 +120,12 @@ class CockroachGame:
             img = self.images[3]
         else:
             img = self.images[4]
-
         img = img.rotate(self.angle)
         self.tk_image = ImageTk.PhotoImage(img)
-
         if self.image_id:
             self.canvas.itemconfig(self.image_id, image=self.tk_image)
         else:
             self.image_id = self.canvas.create_image(self.x_pos, self.y_pos, image=self.tk_image, anchor=tk.CENTER)
-
         self.canvas.update()
 
     def rotate(self):
@@ -174,7 +178,7 @@ class CockroachGame:
         try:
             music_path = "/mnt/data/crazy_frog.mp3"
             if not os.path.exists(music_path):
-                music_path = "crazy_frog.mp3"  # fallback if in local folder
+                music_path = "crazy_frog.mp3"
             pygame.mixer.music.load(music_path)
             pygame.mixer.music.play()
         except Exception as e:
@@ -199,7 +203,7 @@ class CockroachGame:
             self.canvas.move(self.image_id, -20, 0)
 
     def move_right(self, event):
-        if self.x_pos < 760:
+        if self.x_pos < 660:
             self.x_pos += 20
             self.canvas.move(self.image_id, 20, 0)
 
@@ -213,6 +217,26 @@ class CockroachGame:
             self.y_pos += 20
             self.canvas.move(self.image_id, 0, 20)
 
+    # --- СОРТИРОВКА МАССИВА ТАРАКАНОВ ---
+    def update_display(self):
+        self.display_text.delete("1.0", tk.END)
+        for c in self.cockroach_list:
+            self.display_text.insert(tk.END, str(c) + "\n")
+
+    def sort_cockroaches(self):
+        self.sorting = True
+        n = len(self.cockroach_list)
+        for i in range(n):
+            for j in range(0, n - i - 1):
+                if self.cockroach_list[j].power > self.cockroach_list[j + 1].power:
+                    self.cockroach_list[j], self.cockroach_list[j + 1] = self.cockroach_list[j + 1], self.cockroach_list[j]
+                time.sleep(0.3)
+                self.update_display()
+        self.sorting = False
+
+    def start_sorting_thread(self):
+        if not self.sorting:
+            threading.Thread(target=self.sort_cockroaches, daemon=True).start()
 
 if __name__ == "__main__":
     root = tk.Tk()
