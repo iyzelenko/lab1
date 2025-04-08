@@ -6,10 +6,8 @@ import time
 import pygame
 import os
 
-# Инициализация pygame для музыки
 pygame.mixer.init()
 
-# Класс одного таракана
 class Cockroach:
     def __init__(self, power, mutation):
         self.power = power
@@ -18,23 +16,16 @@ class Cockroach:
     def __repr__(self):
         return f"Таракан(мощь={self.power}, мутация='{self.mutation}')"
 
-# Основной класс игры
 class CockroachGame:
     def __init__(self, root):
         self.root = root
         self.root.title("Таракан Ультра")
-        self.root.geometry("1000x700")
+        self.root.geometry("1000x800")
 
         self.power = 1
         self.mutation = "Обычный таракан"
 
-        self.image_files = [
-            "cockroach_1.jpeg",
-            "cockroach_2.jpeg",
-            "cockroach_3.jpeg",
-            "cockroach_4.jpeg",
-            "cockroach_5.jpeg"
-        ]
+        self.image_files = [f"cockroach_{i}.jpeg" for i in range(1, 6)]
         self.images = [Image.open(file).resize((150, 150), Image.LANCZOS) for file in self.image_files]
 
         self.angle = 0
@@ -42,10 +33,9 @@ class CockroachGame:
         self.rotating = False
         self.rotation_direction = 1
         self.animation_speed = 0.2
-
+        self.dance_active = False
         self.bg_colors = ["lightblue", "lightgreen", "lightpink", "lightyellow", "lavender", "orange", "red"]
         self.current_color_index = 0
-        self.dance_active = False
 
         self.label_power = tk.Label(root, text=f"Мощь таракана: {self.power}", font=("Arial", 14))
         self.label_power.pack()
@@ -56,13 +46,15 @@ class CockroachGame:
         self.canvas = tk.Canvas(root, width=700, height=400, bg="lightblue")
         self.canvas.pack()
 
+        self.chart_canvas = tk.Canvas(root, width=700, height=200, bg="white")
+        self.chart_canvas.pack(pady=10)
+
         self.tk_image = None
         self.image_id = None
         self.x_pos = 350
         self.y_pos = 200
         self.update_image()
 
-        # Кнопки управления
         buttons = [
             ("Клик!", self.click),
             ("Повернуть", self.rotate),
@@ -84,19 +76,16 @@ class CockroachGame:
         self.root.bind("<Up>", self.move_up)
         self.root.bind("<Down>", self.move_down)
 
-        # Список тараканов
         self.cockroach_list = [
-            Cockroach(random.randint(1, 100), random.choice(["обычный", "сильный", "гигантский"]))
+            Cockroach(random.randint(10, 100), random.choice(["обычный", "сильный", "гигантский"]))
             for _ in range(10)
         ]
         self.sorting = False
-        self.display_text = tk.Text(root, height=10, width=60)
-        self.display_text.pack()
-        self.update_display()
 
-        # Потоки
         threading.Thread(target=self.animate_images, daemon=True).start()
         threading.Thread(target=self.auto_rotate, daemon=True).start()
+
+        self.draw_chart()
 
     def click(self):
         d = random.randint(-5, 10)
@@ -217,11 +206,23 @@ class CockroachGame:
             self.y_pos += 20
             self.canvas.move(self.image_id, 0, 20)
 
-    # --- СОРТИРОВКА МАССИВА ТАРАКАНОВ ---
-    def update_display(self):
-        self.display_text.delete("1.0", tk.END)
-        for c in self.cockroach_list:
-            self.display_text.insert(tk.END, str(c) + "\n")
+    def draw_chart(self, active_indices=None):
+        self.chart_canvas.delete("all")
+        width = 700
+        height = 200
+        bar_width = width // len(self.cockroach_list)
+        max_power = max(c.power for c in self.cockroach_list)
+        for i, c in enumerate(self.cockroach_list):
+            x0 = i * bar_width + 5
+            x1 = (i + 1) * bar_width - 5
+            bar_height = int((c.power / max_power) * (height - 20))
+            y0 = height - bar_height
+            y1 = height
+            color = "green"
+            if active_indices and i in active_indices:
+                color = "red"
+            self.chart_canvas.create_rectangle(x0, y0, x1, y1, fill=color)
+            self.chart_canvas.create_text((x0 + x1) // 2, y0 - 10, text=str(c.power), font=("Arial", 9))
 
     def sort_cockroaches(self):
         self.sorting = True
@@ -230,8 +231,9 @@ class CockroachGame:
             for j in range(0, n - i - 1):
                 if self.cockroach_list[j].power > self.cockroach_list[j + 1].power:
                     self.cockroach_list[j], self.cockroach_list[j + 1] = self.cockroach_list[j + 1], self.cockroach_list[j]
+                self.draw_chart(active_indices=[j, j+1])
                 time.sleep(0.3)
-                self.update_display()
+        self.draw_chart()
         self.sorting = False
 
     def start_sorting_thread(self):
