@@ -20,7 +20,7 @@ class CockroachGame:
     def __init__(self, root):
         self.root = root
         self.root.title("Таракан Ультра")
-        self.root.geometry("1200x1000")  # Увеличено окно
+        self.root.geometry("1300x700")  # Широкое окно
 
         self.power = 1
         self.mutation = "Обычный таракан"
@@ -36,16 +36,24 @@ class CockroachGame:
         self.image_files = [f"cockroach_{i}.jpeg" for i in range(1, 6)]
         self.images = [Image.open(file).resize((150, 150), Image.LANCZOS) for file in self.image_files]
 
-        self.label_power = tk.Label(root, text=f"Мощь таракана: {self.power}", font=("Arial", 14))
+        # Главный контейнер
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(fill="both", expand=True)
+
+        # Левая часть (игровое поле + график)
+        left_frame = tk.Frame(main_frame)
+        left_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+        self.label_power = tk.Label(left_frame, text=f"Мощь таракана: {self.power}", font=("Arial", 14))
         self.label_power.pack()
-        self.label_mutation = tk.Label(root, text=f"Мутация: {self.mutation}", font=("Arial", 12))
+        self.label_mutation = tk.Label(left_frame, text=f"Мутация: {self.mutation}", font=("Arial", 12))
         self.label_mutation.pack()
 
-        self.canvas = tk.Canvas(root, width=700, height=400, bg="lightblue")
-        self.canvas.pack()
+        self.canvas = tk.Canvas(left_frame, width=700, height=400, bg="lightblue")
+        self.canvas.pack(pady=5)
 
-        self.chart_canvas = tk.Canvas(root, width=700, height=200, bg="white")
-        self.chart_canvas.pack(pady=10)
+        self.chart_canvas = tk.Canvas(left_frame, width=700, height=200, bg="white")
+        self.chart_canvas.pack(pady=5)
 
         self.tk_image = None
         self.image_id = None
@@ -53,7 +61,10 @@ class CockroachGame:
         self.y_pos = 200
         self.update_image()
 
-        # Кнопки
+        # Правая панель кнопок
+        right_frame = tk.Frame(main_frame)
+        right_frame.pack(side="right", fill="y", padx=10, pady=10)
+
         buttons = [
             ("Клик!", self.click),
             ("Повернуть", self.rotate),
@@ -68,36 +79,20 @@ class CockroachGame:
             ("Сортировать тараканов", self.start_sorting_thread),
         ]
 
-        # Прокручиваемая панель кнопок
-        button_frame_container = tk.Frame(root)
-        button_frame_container.pack(fill=tk.X, pady=5)
-
-        canvas_buttons = tk.Canvas(button_frame_container, height=300)
-        scrollbar = tk.Scrollbar(button_frame_container, orient="vertical", command=canvas_buttons.yview)
-        scrollable_frame = tk.Frame(canvas_buttons)
-
-        scrollable_frame.bind("<Configure>", lambda e: canvas_buttons.configure(scrollregion=canvas_buttons.bbox("all")))
-        canvas_buttons.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas_buttons.configure(yscrollcommand=scrollbar.set)
-
-        canvas_buttons.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
         for text, command in buttons:
-            tk.Button(scrollable_frame, text=text, width=30, font=("Arial", 12), command=command).pack(pady=3)
+            tk.Button(right_frame, text=text, width=25, font=("Arial", 11), command=command).pack(pady=4)
 
-        # Клавиши
+        # Клавиши движения
         self.root.bind("<Left>", self.move_left)
         self.root.bind("<Right>", self.move_right)
         self.root.bind("<Up>", self.move_up)
         self.root.bind("<Down>", self.move_down)
 
-        # Массив тараканов
+        # Тараканы и потоки
         self.cockroach_list = [Cockroach(random.randint(10, 100), random.choice(["обычный", "сильный", "гигантский"])) for _ in range(10)]
         self.sorting = False
         self.draw_chart()
 
-        # Потоки
         threading.Thread(target=self.animate_images, daemon=True).start()
         threading.Thread(target=self.auto_rotate, daemon=True).start()
 
@@ -245,7 +240,7 @@ class CockroachGame:
             for j in range(0, n - i - 1):
                 if self.cockroach_list[j].power > self.cockroach_list[j + 1].power:
                     self.cockroach_list[j], self.cockroach_list[j + 1] = self.cockroach_list[j + 1], self.cockroach_list[j]
-                self.draw_chart(active_indices=[j, j+1])
+                self.draw_chart(active_indices=[j, j + 1])
                 time.sleep(0.3)
         self.draw_chart()
         self.sorting = False
