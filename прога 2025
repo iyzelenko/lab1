@@ -105,6 +105,153 @@ class CockroachGame:
 
         self.draw_chart()
 
+    def click(self):
+        d = random.randint(-5, 10)
+        self.power += d
+        self.power = max(0, self.power)
+        mutations = ["Гигантские усы", "Реактивные лапки", "Лазерные глаза", "Летающий таракан"]
+        failures = ["Потерял лапку", "Облысел", "Попал под тапок, но выжил"]
+        self.mutation = random.choice(mutations if d > 0 else failures)
+        self.label_power.config(text=f"Мощь таракана: {self.power}")
+        self.label_mutation.config(text=f"Мутация: {self.mutation}")
+        self.update_image()
+
+    def update_image(self):
+        if self.power <= 10:
+            img = self.images[0]
+        elif self.power <= 30:
+            img = self.images[1]
+        elif self.power <= 50:
+            img = self.images[2]
+        elif self.power <= 100:
+            img = self.images[3]
+        else:
+            img = self.images[4]
+        img = img.rotate(self.angle)
+        self.tk_image = ImageTk.PhotoImage(img)
+        if self.image_id:
+            self.canvas.itemconfig(self.image_id, image=self.tk_image)
+        else:
+            self.image_id = self.canvas.create_image(self.x_pos, self.y_pos, image=self.tk_image, anchor=tk.CENTER)
+        self.canvas.update()
+
+    def rotate(self):
+        self.angle = (self.angle + 45) % 360
+        self.update_image()
+
+    def animate_images(self):
+        while True:
+            if self.running:
+                self.power += random.randint(-2, 5)
+                self.update_image()
+            time.sleep(self.animation_speed)
+
+    def auto_rotate(self):
+        while True:
+            if self.rotating:
+                self.angle = (self.angle + 10 * self.rotation_direction) % 360
+                self.update_image()
+            time.sleep(0.1)
+
+    def start_animation(self):
+        self.running = True
+
+    def stop_animation(self):
+        self.running = False
+
+    def speed_up(self):
+        self.animation_speed = max(0.05, self.animation_speed - 0.05)
+
+    def start_rotation(self):
+        self.rotating = True
+
+    def stop_rotation(self):
+        self.rotating = False
+
+    def change_rotation(self):
+        self.rotation_direction *= -1
+
+    def change_background_color(self):
+        self.current_color_index = (self.current_color_index + 1) % len(self.bg_colors)
+        self.canvas.config(bg=self.bg_colors[self.current_color_index])
+
+    def start_dance_party(self):
+        if not self.dance_active:
+            self.dance_active = True
+            threading.Thread(target=self.dance_loop, daemon=True).start()
+            threading.Thread(target=self.play_music, daemon=True).start()
+
+    def play_music(self):
+        try:
+            music_path = "crazy_frog.mp3"
+            pygame.mixer.music.load(music_path)
+            pygame.mixer.music.play()
+        except Exception as e:
+            print(f"Ошибка воспроизведения музыки: {e}")
+
+    def dance_loop(self):
+        directions = [15, -15]
+        direction_index = 0
+        for _ in range(100):
+            self.angle += directions[direction_index]
+            direction_index = (direction_index + 1) % 2
+            self.y_pos += -10 if direction_index == 0 else 10
+            self.canvas.move(self.image_id, 0, -10 if direction_index == 0 else 10)
+            self.canvas.config(bg=random.choice(self.bg_colors))
+            self.update_image()
+            time.sleep(0.2)
+        self.dance_active = False
+
+    def move_left(self, event):
+        if self.x_pos > 40:
+            self.x_pos -= 20
+            self.canvas.move(self.image_id, -20, 0)
+
+    def move_right(self, event):
+        if self.x_pos < 660:
+            self.x_pos += 20
+            self.canvas.move(self.image_id, 20, 0)
+
+    def move_up(self, event):
+        if self.y_pos > 40:
+            self.y_pos -= 20
+            self.canvas.move(self.image_id, 0, -20)
+
+    def move_down(self, event):
+        if self.y_pos < 360:
+            self.y_pos += 20
+            self.canvas.move(self.image_id, 0, 20)
+
+    def draw_chart(self):
+        self.chart_canvas.delete("all")
+        width = 700
+        height = 200
+        bar_width = width // len(self.cockroach_list)
+        max_power = max(c.power for c in self.cockroach_list)
+        for i, c in enumerate(self.cockroach_list):
+            x0 = i * bar_width + 5
+            x1 = (i + 1) * bar_width - 5
+            bar_height = int((c.power / max_power) * (height - 20))
+            y0 = height - bar_height
+            y1 = height
+            self.chart_canvas.create_rectangle(x0, y0, x1, y1, fill="green")
+            self.chart_canvas.create_text((x0 + x1) // 2, y0 - 10, text=str(c.power), font=("Arial", 9))
+
+    def sort_cockroaches(self):
+        self.sorting = True
+        n = len(self.cockroach_list)
+        for i in range(n):
+            for j in range(0, n - i - 1):
+                if self.cockroach_list[j].power > self.cockroach_list[j + 1].power:
+                    self.cockroach_list[j], self.cockroach_list[j + 1] = self.cockroach_list[j + 1], self.cockroach_list[j]
+                    self.draw_chart()
+                    time.sleep(0.3)
+        self.sorting = False
+
+    def start_sorting_thread(self):
+        if not self.sorting:
+            threading.Thread(target=self.sort_cockroaches, daemon=True).start()
+
     def start_astar_thread(self):
         if not self.astar_active:
             threading.Thread(target=self.run_astar, daemon=True).start()
@@ -121,7 +268,6 @@ class CockroachGame:
         open_list = []
         heapq.heappush(open_list, Node(*start, h=heuristic(start, goal)))
         closed_set = set()
-        came_from = {}
 
         while open_list:
             current = heapq.heappop(open_list)
@@ -149,4 +295,7 @@ class CockroachGame:
         for (x, y) in path:
             self.path_canvas.create_rectangle(y*size, x*size, y*size+size, x*size+size, fill="blue")
 
-    # Остальные методы не изменялись и продолжаются ниже...
+if __name__ == "__main__":
+    root = tk.Tk()
+    game = CockroachGame(root)
+    root.mainloop()
