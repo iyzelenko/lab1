@@ -74,21 +74,23 @@ class CockroachGame:
         self.update_image()
 
         buttons = [
-            ("Клик!", self.click),
-            ("Повернуть", self.rotate),
-            ("Начать прокручивание", self.start_rotation),
-            ("Остановить прокручивание", self.stop_rotation),
-            ("Сменить направление", self.change_rotation),
-            ("Старт анимации", self.start_animation),
-            ("Стоп анимации", self.stop_animation),
-            ("Ускорить анимацию", self.speed_up),
-            ("Сменить цвет фона", self.change_background_color),
-            ("💃 Танец + музыка!", self.start_dance_party),
-            ("Сортировать тараканов", self.start_sorting_thread),
-            ("A* поиск пути", self.start_astar_thread),
-        ]
-        for text, command in buttons:
-            tk.Button(root, text=text, command=command).pack(pady=2)
+    ("Клик!", self.click),
+    ("Повернуть", self.rotate),
+    ("Начать прокручивание", self.start_rotation),
+    ("Остановить прокручивание", self.stop_rotation),
+    ("Сменить направление", self.change_rotation),
+    ("Старт анимации", self.start_animation),
+    ("Стоп анимации", self.stop_animation),
+    ("Ускорить анимацию", self.speed_up),
+    ("Сменить цвет фона", self.change_background_color),
+    ("💃 Танец + музыка!", self.start_dance_party),
+    ("Сортировать тараканов", self.start_sorting_thread),
+    ("A* поиск пути", self.start_astar_thread),
+]
+        right_frame = tk.Frame(self.root)
+right_frame.place(x=750, y=50)
+for text, command in buttons:
+    tk.Button(right_frame, text=text, width=25, command=command).pack(pady=2)
 
         self.root.bind("<Left>", self.move_left)
         self.root.bind("<Right>", self.move_right)
