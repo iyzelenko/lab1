@@ -61,8 +61,7 @@ class CockroachGame:
         self.canvas = tk.Canvas(root, width=700, height=400, bg="lightblue")
         self.canvas.pack()
 
-        self.chart_canvas = tk.Canvas(root, width=700, height=200, bg="white")
-        self.chart_canvas.pack(pady=10)
+        
 
         self.path_canvas = tk.Canvas(root, width=700, height=200, bg="lightgrey")
         self.path_canvas.pack(pady=10)
@@ -84,7 +83,7 @@ class CockroachGame:
     ("Ускорить анимацию", self.speed_up),
     ("Сменить цвет фона", self.change_background_color),
     ("💃 Танец + музыка!", self.start_dance_party),
-    ("Сортировать тараканов", self.start_sorting_thread),
+    
     ("A* поиск пути", self.start_astar_thread),
 ]
         right_frame = tk.Frame(self.root)
@@ -97,15 +96,11 @@ for text, command in buttons:
         self.root.bind("<Up>", self.move_up)
         self.root.bind("<Down>", self.move_down)
 
-        self.cockroach_list = [
-            Cockroach(random.randint(10, 100), random.choice(["обычный", "сильный", "гигантский"]))
-            for _ in range(10)
-        ]
-
+        
         threading.Thread(target=self.animate_images, daemon=True).start()
         threading.Thread(target=self.auto_rotate, daemon=True).start()
 
-        self.draw_chart()
+        
 
     def click(self):
         d = random.randint(-5, 10)
@@ -223,37 +218,6 @@ for text, command in buttons:
         if self.y_pos < 360:
             self.y_pos += 20
             self.canvas.move(self.image_id, 0, 20)
-
-    def draw_chart(self):
-        self.chart_canvas.delete("all")
-        width = 700
-        height = 200
-        bar_width = width // len(self.cockroach_list)
-        max_power = max(c.power for c in self.cockroach_list)
-        for i, c in enumerate(self.cockroach_list):
-            x0 = i * bar_width + 5
-            x1 = (i + 1) * bar_width - 5
-            bar_height = int((c.power / max_power) * (height - 20))
-            y0 = height - bar_height
-            y1 = height
-            self.chart_canvas.create_rectangle(x0, y0, x1, y1, fill="green")
-            self.chart_canvas.create_text((x0 + x1) // 2, y0 - 10, text=str(c.power), font=("Arial", 9))
-
-    def sort_cockroaches(self):
-        self.sorting = True
-        n = len(self.cockroach_list)
-        for i in range(n):
-            for j in range(0, n - i - 1):
-                if self.cockroach_list[j].power > self.cockroach_list[j + 1].power:
-                    self.cockroach_list[j], self.cockroach_list[j + 1] = self.cockroach_list[j + 1], self.cockroach_list[j]
-                    self.draw_chart()
-                    time.sleep(0.3)
-        self.sorting = False
-
-    def start_sorting_thread(self):
-        if not self.sorting:
-            threading.Thread(target=self.sort_cockroaches, daemon=True).start()
-
     def start_astar_thread(self):
         if not self.astar_active:
             threading.Thread(target=self.run_astar, daemon=True).start()
